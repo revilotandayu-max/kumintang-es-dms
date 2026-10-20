@@ -1,0 +1,2352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kumintang ES Data Management System</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              900: '#0e3a2f',
+              800: '#144d3f',
+              700: '#1c5e4f',
+              600: '#237361',
+              500: '#2b8772',
+              100: '#e5f3ee',
+              50: '#f0f8f5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for data tables and sidebar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @media print {
+      aside, header button, .no-print {
+        display: none !important;
+      }
+      main {
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased font-sans">
+
+  <!-- AUTHENTICATION SCREEN -->
+  <div id="auth-screen" class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-[#0e3a2f]">
+    <!-- Decorative bg elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+      <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-[#1c5e4f] blur-[100px] opacity-60"></div>
+      <div class="absolute bottom-[10%] -right-[10%] w-[40%] h-[40%] rounded-full bg-[#2b8772] blur-[80px] opacity-40"></div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative z-10 border border-emerald-900/10">
+      <div class="text-center mb-8">
+        <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center mx-auto mb-4 border border-emerald-100 shadow-sm">
+          <i data-lucide="school" class="w-6 h-6"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-slate-900">Kumintang ES</h1>
+        <p class="text-xs text-slate-500 font-medium mt-1 uppercase tracking-widest">Data Management System</p>
+      </div>
+
+      <!-- Auth Toggles -->
+      <div class="flex p-1 bg-slate-100 rounded-lg mb-6">
+        <button id="tab-login" onclick="window.toggleAuthMode('login')" class="flex-1 py-2 text-sm font-semibold rounded-md bg-white text-emerald-800 shadow-sm transition">Login</button>
+        <button id="tab-register" onclick="window.toggleAuthMode('register')" class="flex-1 py-2 text-sm font-semibold rounded-md text-slate-500 hover:text-slate-700 transition">Register</button>
+      </div>
+
+      <form id="auth-form" onsubmit="window.handleAuthSubmit(event)" class="space-y-4">
+        <div id="auth-error" class="hidden bg-rose-50 text-rose-600 text-xs p-3 rounded-lg border border-rose-200 font-medium"></div>
+        
+        <div>
+          <label class="block text-xs font-medium text-slate-700 mb-1">Email Address</label>
+          <input type="email" id="auth-email" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-600 outline-none transition" placeholder="admin@kumintang.edu.ph">
+        </div>
+        
+        <div>
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-xs font-medium text-slate-700">Password</label>
+            <button type="button" id="forgot-pass-btn" onclick="window.handleForgotPassword()" class="text-[10px] font-medium text-emerald-700 hover:text-emerald-800 transition">Forgot password?</button>
+          </div>
+          <input type="password" id="auth-pass" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-600 outline-none transition" placeholder="••••••••">
+        </div>
+
+        <div id="role-selection" class="hidden">
+          <label class="block text-xs font-medium text-slate-700 mb-1">Account Role</label>
+          <select id="auth-role" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-emerald-600 outline-none transition">
+            <option value="Teacher">Teacher / Faculty</option>
+            <option value="Admin">Administrator / Registrar</option>
+          </select>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="w-full py-2.5 mt-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-semibold shadow-md transition flex justify-center items-center">
+          <span>Sign In</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MAIN APP CONTAINER -->
+  <div id="main-app" class="hidden flex-col min-h-screen">
+
+  <!-- Top Navigation Header -->
+  <header class="bg-[#144d3f] text-white px-4 lg:px-6 py-2.5 flex items-center justify-between shadow-md z-30 sticky top-0">
+    <div class="flex items-center space-x-3">
+      <button id="sidebarToggleBtn" class="lg:hidden p-1.5 rounded-lg text-emerald-100 hover:bg-[#0e3a2f] focus:outline-none">
+        <i data-lucide="menu" class="w-6 h-6"></i>
+      </button>
+      <div class="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300">
+        <i data-lucide="sparkles" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="text-sm md:text-base font-bold tracking-wide uppercase leading-tight">KUMINTANG ES DATA MANAGEMENT SYSTEM</h1>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex flex-1 overflow-hidden relative">
+    <!-- Sidebar Navigation -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 w-64 bg-slate-50 border-r border-slate-200 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-200 ease-in-out flex flex-col pt-16 lg:pt-0">
+      <div class="p-4 flex-1 overflow-y-auto space-y-6 text-xs">
+        <!-- Section: Workspace -->
+        <div>
+          <p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 px-3">WORKSPACE</p>
+          <ul class="space-y-1">
+            <li>
+              <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-emerald-900 bg-emerald-100/70 border border-emerald-200/60 transition">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 text-emerald-800"></i>
+                <span>Dashboard</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="switchTab('learners')" id="nav-learners" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="users" class="w-4 h-4 text-slate-500"></i>
+                <span>Learner records</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="switchTab('personnel')" id="nav-personnel" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="briefcase" class="w-4 h-4 text-slate-500"></i>
+                <span>Personnel</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="switchTab('academic')" id="nav-academic" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="book-open" class="w-4 h-4 text-slate-500"></i>
+                <span>Academic data</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section: Operations -->
+        <div>
+          <p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 px-3">OPERATIONS</p>
+          <ul class="space-y-1">
+            <li>
+              <button onclick="switchTab('programs')" id="nav-programs" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="target" class="w-4 h-4 text-slate-500"></i>
+                <span>Programs & projects</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="switchTab('inventory')" id="nav-inventory" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="package" class="w-4 h-4 text-slate-500"></i>
+                <span>Property & inventory</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="switchTab('finance')" id="nav-finance" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="banknote" class="w-4 h-4 text-slate-500"></i>
+                <span>Finance & donations</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="switchTab('documents')" id="nav-documents" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="file-text" class="w-4 h-4 text-slate-500"></i>
+                <span>Documents</span>
+              </button>
+            </li>
+            <li>
+              <button onclick="showToast('Reports generator module is synchronized.')" class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="bar-chart-3" class="w-4 h-4 text-slate-500"></i>
+                <span>Reports center</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Section: Administration -->
+        <div>
+          <p class="text-[10px] font-bold tracking-wider text-slate-400 uppercase mb-2 px-3">ADMINISTRATION</p>
+          <ul class="space-y-1">
+            <li id="nav-item-accounts" style="display: none;">
+              <button onclick="switchTab('accounts')" id="nav-accounts" class="nav-item w-full flex items-center space-x-3 px-3 py-2 rounded-lg font-medium text-slate-600 hover:bg-slate-200/60 hover:text-slate-900 transition">
+                <i data-lucide="shield-check" class="w-4 h-4 text-slate-500"></i>
+                <span>Users & permissions</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- User footer profile -->
+      <div class="p-3 border-t border-slate-200 bg-slate-100 flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-full bg-[#144d3f] text-white flex items-center justify-center font-bold text-xs" id="user-avatar-initial">
+            A
+          </div>
+          <div class="truncate">
+            <p class="text-xs font-semibold text-slate-800" id="user-profile-role">Admin Staff</p>
+            <p class="text-[10px] text-slate-500 truncate" id="user-profile-email">registrar@kes.edu.ph</p>
+          </div>
+        </div>
+        <div class="flex space-x-1">
+          <button onclick="window.resetToDefaultData()" title="Reset to initial prototype data" class="p-1.5 text-slate-400 hover:text-rose-600 rounded">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+          <button onclick="window.handleLogout()" title="Sign Out" class="p-1.5 text-slate-400 hover:text-slate-700 rounded">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay backdrop for mobile sidebar -->
+    <div id="sidebarBackdrop" class="fixed inset-0 bg-slate-900/40 z-30 hidden lg:hidden"></div>
+
+    <!-- Main Content Canvas -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-[#f5f8f7]">
+
+      <!-- ============================================== -->
+      <!-- VIEW 1: SCHOOL OVERVIEW DASHBOARD (Screenshot UI) -->
+      <!-- ============================================== -->
+      <section id="view-dashboard" class="view-panel space-y-6">
+        <!-- Dashboard Header & Subtitle -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-200/80 pb-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/60 px-2 py-0.5 rounded">
+              KES - INTEGRATED DATA WORKSPACE
+            </span>
+            <h2 class="text-2xl font-bold text-slate-900 mt-1">School overview</h2>
+            <p class="text-xs md:text-sm text-slate-500">A unified view of school data and daily operations.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openAddAttentionModal()" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 shadow-sm transition">
+              <i data-lucide="alert-circle" class="w-3.5 h-3.5 text-amber-500"></i>
+              <span>Add Reminder</span>
+            </button>
+            <button onclick="openAddLearnerModal()" class="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#144d3f] hover:bg-[#0e3a2f] text-white shadow-sm transition">
+              <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+              <span>Enroll Learner</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 4 Top KPI Metric Cards matching the photo -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Learners -->
+          <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition relative">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-medium text-slate-500">Total learners</span>
+              <span class="p-1 rounded-md bg-emerald-50 text-emerald-700">
+                <i data-lucide="graduation-cap" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpi-learners" class="text-2xl md:text-3xl font-bold text-slate-900 mt-2">913</p>
+            <p class="text-[11px] text-slate-400 mt-1">Illustrative school-wide count</p>
+          </div>
+
+          <!-- Personnel -->
+          <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition relative">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-medium text-slate-500">Personnel</span>
+              <span class="p-1 rounded-md bg-emerald-50 text-emerald-700">
+                <i data-lucide="briefcase" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpi-personnel" class="text-2xl md:text-3xl font-bold text-slate-900 mt-2">52</p>
+            <p class="text-[11px] text-slate-400 mt-1">Teaching and non-teaching</p>
+          </div>
+
+          <!-- Active programs -->
+          <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition relative">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-medium text-slate-500">Active programs</span>
+              <span class="p-1 rounded-md bg-emerald-50 text-emerald-700">
+                <i data-lucide="activity" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpi-programs" class="text-2xl md:text-3xl font-bold text-slate-900 mt-2">6</p>
+            <p class="text-[11px] text-slate-400 mt-1">Across school priorities</p>
+          </div>
+
+          <!-- Assets tracked -->
+          <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-emerald-300 transition relative">
+            <div class="flex justify-between items-start">
+              <span class="text-xs font-medium text-slate-500">Assets tracked</span>
+              <span class="p-1 rounded-md bg-emerald-50 text-emerald-700">
+                <i data-lucide="layers" class="w-4 h-4"></i>
+              </span>
+            </div>
+            <p id="kpi-assets" class="text-2xl md:text-3xl font-bold text-slate-900 mt-2">205</p>
+            <p class="text-[11px] text-slate-400 mt-1">Across sample inventory records</p>
+          </div>
+        </div>
+
+        <!-- Middle Section: Learner Distribution (Left) & Right Sidebar Panels (Attention & Activity) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Left Column: Learner distribution by grade (Takes 2 cols) -->
+          <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-xl p-5 border border-slate-200/80 shadow-xs">
+              <div class="flex items-center justify-between mb-4">
+                <div>
+                  <h3 class="text-sm font-semibold text-slate-800">Learner distribution by grade</h3>
+                  <p class="text-[11px] text-slate-400">Real-time aggregate based on active student registry records</p>
+                </div>
+                <span class="text-[11px] font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">
+                  Sample summary
+                </span>
+              </div>
+
+              <!-- Grade progress bars -->
+              <div id="grade-bars-container" class="space-y-3.5 pt-1">
+                <!-- Dynamically populated via JS -->
+              </div>
+
+              <p class="text-[11px] text-slate-400 mt-5 pt-3 border-t border-slate-100 italic">
+                Replaces illustrative figures with verified database aggregates after deployment.
+              </p>
+            </div>
+
+            <!-- School data modules quick cards -->
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500">School data modules</h3>
+                <button onclick="switchTab('learners')" class="text-xs font-medium text-emerald-800 hover:underline flex items-center space-x-1">
+                  <span>Open reports</span>
+                  <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <!-- Module 1 -->
+                <div onclick="switchTab('learners')" class="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-emerald-400 cursor-pointer transition group shadow-xs">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:bg-emerald-700 group-hover:text-white transition">
+                    <i data-lucide="user-check" class="w-4 h-4"></i>
+                  </div>
+                  <h4 class="text-xs font-bold text-slate-800">Learner records</h4>
+                  <p class="text-[11px] text-slate-500 mt-1">Full-year master register for administrator search, LRN, and report.</p>
+                  <span class="text-[11px] text-emerald-800 font-medium inline-block mt-3 group-hover:translate-x-0.5 transition">Open module &rarr;</span>
+                </div>
+
+                <!-- Module 2 -->
+                <div onclick="switchTab('personnel')" class="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-emerald-400 cursor-pointer transition group shadow-xs">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:bg-emerald-700 group-hover:text-white transition">
+                    <i data-lucide="contact" class="w-4 h-4"></i>
+                  </div>
+                  <h4 class="text-xs font-bold text-slate-800">Personnel directory</h4>
+                  <p class="text-[11px] text-slate-500 mt-1">Staff assignments and attendance records.</p>
+                  <span class="text-[11px] text-emerald-800 font-medium inline-block mt-3 group-hover:translate-x-0.5 transition">Open module &rarr;</span>
+                </div>
+
+                <!-- Module 3 -->
+                <div onclick="switchTab('academic')" class="bg-white p-4 rounded-xl border border-slate-200/80 hover:border-emerald-400 cursor-pointer transition group shadow-xs">
+                  <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:bg-emerald-700 group-hover:text-white transition">
+                    <i data-lucide="award" class="w-4 h-4"></i>
+                  </div>
+                  <h4 class="text-xs font-bold text-slate-800">Academic data</h4>
+                  <p class="text-[11px] text-slate-500 mt-1">Assessment, attendance, and teacher progress monitoring.</p>
+                  <span class="text-[11px] text-emerald-800 font-medium inline-block mt-3 group-hover:translate-x-0.5 transition">Open module &rarr;</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column: Attention Items & Activity Log -->
+          <div class="space-y-6">
+            
+            <!-- Items needing attention -->
+            <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="bell" class="w-4 h-4 text-slate-600"></i>
+                  <h3 class="text-xs font-bold text-slate-800">Items needing attention</h3>
+                </div>
+                <span id="attention-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">4 items</span>
+              </div>
+              <div id="attention-list" class="space-y-2.5">
+                <!-- Items populated dynamically via JS -->
+              </div>
+            </div>
+
+            <!-- Recent school activity -->
+            <div class="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="history" class="w-4 h-4 text-slate-600"></i>
+                  <h3 class="text-xs font-bold text-slate-800">Recent school activity</h3>
+                </div>
+                <span class="text-[10px] text-slate-400 font-medium">Demo entries</span>
+              </div>
+              <div id="activity-log-list" class="space-y-3 relative before:absolute before:left-2.5 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <!-- Activity logs dynamically rendered -->
+              </div>
+              <button onclick="logNewActivityPrompt()" class="w-full mt-3 py-1.5 border border-dashed border-slate-300 rounded-lg text-[11px] font-medium text-slate-600 hover:border-emerald-600 hover:text-emerald-700 transition flex items-center justify-center space-x-1">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Log New School Event</span>
+              </button>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 2: LEARNER RECORDS (CRUD Table) -->
+      <!-- ============================================== -->
+      <section id="view-learners" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Learner Records Directory</h2>
+            <p class="text-xs text-slate-500">Manage learner enrollment, master list, grade placement, and guardian info.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="openAddLearnerModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg text-xs font-medium shadow-xs transition">
+              <i data-lucide="user-plus" class="w-4 h-4"></i>
+              <span>Add New Learner</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center space-x-2 flex-1 min-w-[200px]">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+            <input type="text" id="learner-search" oninput="renderLearnersTable()" placeholder="Search by name, LRN, or section..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600">
+          </div>
+          <div class="flex items-center space-x-2">
+            <select id="learner-grade-filter" onchange="renderLearnersTable()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600">
+              <option value="ALL">All Grades (1 to 6)</option>
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+            </select>
+            <select id="learner-status-filter" onchange="renderLearnersTable()" class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600">
+              <option value="ALL">All Status</option>
+              <option value="Enrolled">Enrolled</option>
+              <option value="Transferred">Transferred</option>
+              <option value="Under Review">Under Review</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Learners Table -->
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">LRN / ID</th>
+                  <th class="py-3 px-4">Full Name</th>
+                  <th class="py-3 px-4">Grade & Section</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4">Guardian Contact</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="learners-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated via JS -->
+              </tbody>
+            </table>
+          </div>
+          <div class="p-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+            <span id="learners-count-text">Showing active records</span>
+            <span class="text-[11px] text-emerald-700 font-medium">Auto-synced with Dashboard</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 3: PERSONNEL DIRECTORY (CRUD) -->
+      <!-- ============================================== -->
+      <section id="view-personnel" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Personnel & Faculty Directory</h2>
+            <p class="text-xs text-slate-500">Master roster of teaching and non-teaching personnel.</p>
+          </div>
+          <button onclick="openAddPersonnelModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg text-xs font-medium shadow-xs transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Add Personnel</span>
+          </button>
+        </div>
+
+        <!-- Personnel Table -->
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Employee ID</th>
+                  <th class="py-3 px-4">Full Name</th>
+                  <th class="py-3 px-4">Role / Title</th>
+                  <th class="py-3 px-4">Assignment</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="personnel-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 4: PROPERTY & INVENTORY (Assets) -->
+      <!-- ============================================== -->
+      <section id="view-inventory" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Property & Inventory Management</h2>
+            <p class="text-xs text-slate-500">Track and audit physical classroom equipment, IT assets, and educational resources.</p>
+          </div>
+          <button onclick="openAddAssetModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg text-xs font-medium shadow-xs transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Register Asset</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Asset Code</th>
+                  <th class="py-3 px-4">Item Name / Description</th>
+                  <th class="py-3 px-4">Location / Room</th>
+                  <th class="py-3 px-4">Quantity</th>
+                  <th class="py-3 px-4">Condition</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventory-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- VIEW 5: ACADEMIC DATA & PROGRAMS VIEW -->
+      <!-- ============================================== -->
+      <section id="view-academic" class="view-panel hidden space-y-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <h2 class="text-lg font-bold text-slate-900">Academic Data & Grading Cycles</h2>
+          <p class="text-xs text-slate-500">Quarterly assessment performance summaries, SF2 attendance records, and DepEd Form 137 archives.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+            <h3 class="text-xs font-bold text-slate-700 uppercase">Q1 Performance Average</h3>
+            <p class="text-3xl font-extrabold text-emerald-800 mt-2">88.4%</p>
+            <p class="text-[11px] text-emerald-600 mt-1">&uarr; 2.1% from previous cycle</p>
+          </div>
+          <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+            <h3 class="text-xs font-bold text-slate-700 uppercase">Daily Student Attendance</h3>
+            <p class="text-3xl font-extrabold text-slate-900 mt-2">96.8%</p>
+            <p class="text-[11px] text-slate-400 mt-1">Average school-wide presence</p>
+          </div>
+          <div class="bg-white p-5 rounded-xl border border-slate-200/80 shadow-xs">
+            <h3 class="text-xs font-bold text-slate-700 uppercase">Curriculum Modules Tracked</h3>
+            <p class="text-3xl font-extrabold text-slate-900 mt-2">48 / 48</p>
+            <p class="text-[11px] text-emerald-600 mt-1">100% on schedule for Term 1</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 6: PROGRAMS & PROJECTS -->
+      <section id="view-programs" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Active School Programs & Initiatives</h2>
+            <p class="text-xs text-slate-500">Brigada Eskwela, Feeding Programs, DRRM Safety Drills, and Literacy Boosters.</p>
+          </div>
+          <button onclick="openAddProgramModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg text-xs font-medium shadow-xs transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Add Program</span>
+          </button>
+        </div>
+        <div id="programs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Program cards populated via JS -->
+        </div>
+      </section>
+
+      <!-- VIEW 7: FINANCE & DONATIONS -->
+      <section id="view-finance" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Finance & Community Donations</h2>
+            <p class="text-xs text-slate-500">MOOE allocations, PTA contributions, and verified donations ledger.</p>
+          </div>
+          <button onclick="openAddFinanceModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg text-xs font-medium shadow-xs transition">
+            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            <span>Add Record</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-200 p-4 bg-slate-50">
+            <span class="text-xs font-semibold text-slate-700">Financial Ledger</span>
+            <span class="text-xs font-bold text-emerald-800" id="finance-balance-display">Balance: ₱0.00</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Date</th>
+                  <th class="py-3 px-4">Source / Donor Name</th>
+                  <th class="py-3 px-4">Purpose / Description</th>
+                  <th class="py-3 px-4 text-right">Amount (₱)</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="finance-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 9: DOCUMENTS REPOSITORY -->
+      <section id="view-documents" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Document Repository</h2>
+            <p class="text-xs text-slate-500">Securely store, search, and download official school files (Max 800KB per file).</p>
+          </div>
+          <button onclick="openAddDocumentModal()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg text-xs font-medium shadow-xs transition">
+            <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+            <span>Upload Document</span>
+          </button>
+        </div>
+
+        <div class="bg-white p-3 rounded-xl border border-slate-200/80 flex items-center space-x-2">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+          <input type="text" id="document-search" oninput="renderDocumentsTable()" placeholder="Search documents by name..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-600">
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Document Name</th>
+                  <th class="py-3 px-4">File Type</th>
+                  <th class="py-3 px-4">Size (KB)</th>
+                  <th class="py-3 px-4">Date Uploaded</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="documents-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 8: ACCOUNTS DIRECTORY -->
+      <section id="view-accounts" class="view-panel hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">System Accounts & Permissions</h2>
+            <p class="text-xs text-slate-500">Manage registered user accounts and their system access roles.</p>
+          </div>
+          <button onclick="fetchAndRenderAccounts()" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-medium shadow-xs transition">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+            <span>Refresh List</span>
+          </button>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">User ID</th>
+                  <th class="py-3 px-4">Email Address</th>
+                  <th class="py-3 px-4">Role</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-table-body" class="divide-y divide-slate-100">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- MODALS FOR ADDING / EDITING DATA -->
+  <!-- ============================================== -->
+
+  <!-- Modal: Add / Edit Learner -->
+  <div id="modal-learner" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 id="modal-learner-title" class="text-base font-bold text-slate-900">Add New Learner</h3>
+        <button onclick="closeModal('modal-learner')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="learner-form" onsubmit="saveLearner(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="learner-id-edit">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Learner Reference No. (LRN)</label>
+            <input type="text" id="learner-lrn" required placeholder="12-digit LRN" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Status</label>
+            <select id="learner-status" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="Enrolled">Enrolled</option>
+              <option value="Transferred">Transferred</option>
+              <option value="Under Review">Under Review</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Full Student Name (Last, First M.I.)</label>
+          <input type="text" id="learner-name" required placeholder="e.g. Santos, Gabriel M." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Grade Level</label>
+            <select id="learner-grade" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="Grade 1">Grade 1</option>
+              <option value="Grade 2">Grade 2</option>
+              <option value="Grade 3">Grade 3</option>
+              <option value="Grade 4">Grade 4</option>
+              <option value="Grade 5">Grade 5</option>
+              <option value="Grade 6">Grade 6</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Section</label>
+            <input type="text" id="learner-section" required placeholder="e.g. Mabini / Emerald" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Parent / Guardian Contact</label>
+          <input type="text" id="learner-guardian" placeholder="e.g. Maria Santos (0917-555-0192)" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-learner')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium shadow-xs">Save Learner Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Personnel -->
+  <div id="modal-personnel" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 id="modal-personnel-title" class="text-base font-bold text-slate-900">Add Personnel</h3>
+        <button onclick="closeModal('modal-personnel')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="personnel-form" onsubmit="savePersonnel(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="personnel-id-edit">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Employee ID</label>
+            <input type="text" id="personnel-empid" required placeholder="DEPED-2026-XXXX" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Full Name</label>
+            <input type="text" id="personnel-name" required placeholder="e.g. Elena Reyes, LPT" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Role / Position</label>
+            <input type="text" id="personnel-role" required placeholder="e.g. Master Teacher I" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Assignment / Dept</label>
+            <input type="text" id="personnel-dept" required placeholder="e.g. Grade 4 Chair / Admin" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Employment Status</label>
+          <select id="personnel-status" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+            <option value="Active">Active (Permanent / Regular)</option>
+            <option value="On Leave">On Leave</option>
+            <option value="Contractual">Contractual / Project-based</option>
+          </select>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-personnel')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium shadow-xs">Save Staff Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add Attention Reminder -->
+  <div id="modal-attention" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-900">Add Attention Item / Task</h3>
+        <button onclick="closeModal('modal-attention')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="saveAttentionItem(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Task / Subject</label>
+          <input type="text" id="att-title" required placeholder="e.g. Electrical wiring inspection" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Action Description</label>
+          <textarea id="att-desc" required rows="2" placeholder="e.g. Room 204 circuit trip report needs electrician sign-off" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none"></textarea>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Category Code</label>
+          <select id="att-icon" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+            <option value="clipboard-check">Attendance & Compliance</option>
+            <option value="shield-alert">Safety & Health</option>
+            <option value="file-input">Supply & Quotation Request</option>
+            <option value="folder-git-2">Program Reports</option>
+          </select>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-attention')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium">Add to Attention List</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Asset (Inventory) -->
+  <div id="modal-inventory" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 id="modal-inventory-title" class="text-base font-bold text-slate-900">Register New Asset</h3>
+        <button onclick="closeModal('modal-inventory')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="inventory-form" onsubmit="saveAsset(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="inventory-id-edit">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Asset Code</label>
+            <input type="text" id="inventory-code" required placeholder="e.g. KES-EQP-1020" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Quantity</label>
+            <input type="number" id="inventory-qty" required min="1" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Item Name / Description</label>
+          <input type="text" id="inventory-name" required placeholder="e.g. Computer Monitor (Dell 24&quot;)" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Location / Room</label>
+            <input type="text" id="inventory-loc" required placeholder="e.g. IT Lab Room 302" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Condition</label>
+            <select id="inventory-cond" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="Good Condition">Good Condition</option>
+              <option value="Operational">Operational</option>
+              <option value="Needs Re-stock">Needs Re-stock</option>
+              <option value="For Repair/Disposal">For Repair / Disposal</option>
+            </select>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-inventory')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium shadow-xs">Save Asset</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Program -->
+  <div id="modal-program" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 id="modal-program-title" class="text-base font-bold text-slate-900">Add New Program</h3>
+        <button onclick="closeModal('modal-program')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="program-form" onsubmit="saveProgram(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="program-id-edit">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Program / Project Name</label>
+          <input type="text" id="program-name" required placeholder="e.g. Brigada Eskwela" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Lead Coordinator</label>
+            <input type="text" id="program-lead" required placeholder="e.g. Science Dept" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Current Status</label>
+            <input type="text" id="program-status" required placeholder="e.g. Active & Ongoing" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Category Badge</label>
+            <select id="program-badge" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="Priority">Priority</option>
+              <option value="Health">Health</option>
+              <option value="Safety">Safety</option>
+              <option value="Sanitation">Sanitation</option>
+              <option value="Green">Green Initiative</option>
+              <option value="Tech">Tech / IT</option>
+              <option value="Academic">Academic</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Completion State</label>
+            <select id="program-completed" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="false">In Progress</option>
+              <option value="true">Completed</option>
+            </select>
+          </div>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-program')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium shadow-xs">Save Program</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Add / Edit Finance -->
+  <div id="modal-finance" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 id="modal-finance-title" class="text-base font-bold text-slate-900">Add Financial Record</h3>
+        <button onclick="closeModal('modal-finance')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form id="finance-form" onsubmit="saveFinance(event)" class="space-y-3.5 text-xs">
+        <input type="hidden" id="finance-id-edit">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Transaction Type</label>
+            <select id="finance-type" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+              <option value="Inflow">Receipt / Donation (+)</option>
+              <option value="Outflow">Disbursal / Expense (-)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-medium text-slate-700 mb-1">Date</label>
+            <input type="date" id="finance-date" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          </div>
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Source / Donor Name</label>
+          <input type="text" id="finance-source" required placeholder="e.g. PTA, Alumni Assoc, MOOE" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Purpose / Description</label>
+          <input type="text" id="finance-purpose" required placeholder="e.g. Reading Corner Book Sponsorship" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Amount (₱)</label>
+          <input type="number" id="finance-amount" required min="0" step="0.01" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-finance')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium shadow-xs">Save Record</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Upload Document -->
+  <div id="modal-document" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-900">Upload Document</h3>
+        <button onclick="closeModal('modal-document')" class="text-slate-400 hover:text-slate-600">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <form onsubmit="handleFileUpload(event)" class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-medium text-slate-700 mb-1">Select File (Max 800KB)</label>
+          <input type="file" id="document-file" required accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,image/*" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-emerald-700 outline-none">
+          <p class="text-[10px] text-slate-500 mt-1">Accepted formats: PDF, Word, Excel, PowerPoint, Images.</p>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex justify-end space-x-2">
+          <button type="button" onclick="closeModal('modal-document')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-[#144d3f] hover:bg-[#0e3a2f] text-white rounded-lg font-medium shadow-xs">Upload File</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-medium transform translate-y-20 opacity-0 transition-all duration-300 z-50 flex items-center space-x-2">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toast-message">Action successful</span>
+  </div>
+
+  <!-- ============================================== -->
+  <!-- APPLICATION LOGIC (PERSISTENT & REACTIVE) -->
+  <!-- ============================================== -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'kumintang-es-app';
+    let app, auth, db;
+    let isFirebaseEnabled = false;
+
+    try {
+      const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+      if (firebaseConfig) {
+        app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        isFirebaseEnabled = true;
+      }
+    } catch (e) {
+      console.warn("Firebase initialization skipped or failed. Falling back to local storage.", e);
+    }
+
+    // Initial Dataset modeled identically to the screenshot
+    const defaultData = {
+      learners: [
+        { id: "L-101", lrn: "109823001201", name: "Alcantara, Sofia R.", grade: "Grade 1", section: "Emerald", status: "Enrolled", guardian: "Ramon Alcantara (0918-123-4567)" },
+        { id: "L-102", lrn: "109823001202", name: "Bautista, Liam Kyle P.", grade: "Grade 1", section: "Emerald", status: "Enrolled", guardian: "Karen Bautista (0917-234-5678)" },
+        { id: "L-103", lrn: "109823002203", name: "Castillo, Andrea Mae V.", grade: "Grade 2", section: "Ruby", status: "Enrolled", guardian: "Vicente Castillo (0920-345-6789)" },
+        { id: "L-104", lrn: "109823003204", name: "Del Rosario, Marco D.", grade: "Grade 3", section: "Diamond", status: "Enrolled", guardian: "Cynthia Del Rosario (0922-456-7890)" },
+        { id: "L-105", lrn: "109823004205", name: "Estrella, Chloe J.", grade: "Grade 4", section: "Sapphire", status: "Enrolled", guardian: "Joel Estrella (0919-567-8901)" },
+        { id: "L-106", lrn: "109823005206", name: "Flores, Joaquin Ethan", grade: "Grade 5", section: "Amethyst", status: "Enrolled", guardian: "Lorna Flores (0915-678-9012)" },
+        { id: "L-107", lrn: "109823006207", name: "Gutierrez, Bianca Rose", grade: "Grade 6", section: "Topaz", status: "Enrolled", guardian: "Dennis Gutierrez (0917-789-0123)" },
+        { id: "L-108", lrn: "109823006208", name: "Hernandez, Paul Christian", grade: "Grade 6", section: "Topaz", status: "Enrolled", guardian: "Grace Hernandez (0928-890-1234)" },
+        { id: "L-109", lrn: "109823002209", name: "Ilagan, Matthew C.", grade: "Grade 2", section: "Ruby", status: "Transferred", guardian: "Rosa Ilagan (0921-901-2345)" },
+        { id: "L-110", lrn: "109823003210", name: "Javier, Princess Nicole", grade: "Grade 3", section: "Diamond", status: "Under Review", guardian: "Arturo Javier (0916-012-3456)" }
+      ],
+      // Base demographic offsets to match exact screenshot totals (128, 146, 151, 159, 164, 165 = 913)
+      gradeOffsets: {
+        "Grade 1": 126,
+        "Grade 2": 144,
+        "Grade 3": 149,
+        "Grade 4": 158,
+        "Grade 5": 163,
+        "Grade 6": 163
+      },
+      personnel: [
+        { id: "P-01", empid: "DEPED-4A-0901", name: "Maria Teresa Ramos", role: "Principal III", dept: "Executive & Admin", status: "Active" },
+        { id: "P-02", empid: "DEPED-4A-0902", name: "Carlos Mendoza, LPT", role: "Master Teacher II", dept: "Grade 6 / Science", status: "Active" },
+        { id: "P-03", empid: "DEPED-4A-0903", name: "Janice De Silva", role: "Teacher III", dept: "Grade 1 / Reading", status: "Active" },
+        { id: "P-04", empid: "DEPED-4A-0904", name: "Rogelio Villanueva", role: "Administrative Officer II", dept: "Records & LIS", status: "Active" },
+        { id: "P-05", empid: "DEPED-4A-0905", name: "Kristine Joy Santos", role: "School Nurse II", dept: "Health & Clinic", status: "Active" },
+        { id: "P-06", empid: "DEPED-4A-0906", name: "Benjamin Cruz", role: "Security & Safety Lead", dept: "General Services", status: "Active" }
+      ],
+      personnelBaseOffset: 46, // Sums up to 52 as seen in screenshot
+      inventory: [
+        { id: "AST-01", code: "KES-DESK-2026", name: "Classroom Armchairs (Wood & Steel)", location: "Rooms 101-106", qty: 140, condition: "Good Condition" },
+        { id: "AST-02", code: "KES-COMP-2024", name: "DepEd Computer Package (All-in-One)", location: "e-Classroom Lab", qty: 35, condition: "Operational" },
+        { id: "AST-03", code: "KES-TV-2025", name: "Smart TV 55\" Presentation Units", location: "Grade 1-6 Sections", qty: 18, condition: "Operational" },
+        { id: "AST-04", code: "KES-FAK-2026", name: "Wall-mounted First Aid Stations", location: "Clinic & Corridors", qty: 12, condition: "Needs Re-stock" }
+      ],
+      activeProgramsCount: 6,
+      programs: [
+        { id: "PRG-1", name: "Brigada Pagbasa Literacy Drive", lead: "Reading Coordinators", status: "Active & Ongoing", badge: "Priority", completed: false },
+        { id: "PRG-2", name: "School-Based Feeding Program (SBFP)", lead: "Clinic Department", status: "Daily Distribution", badge: "Health", completed: false },
+        { id: "PRG-3", name: "DRRM Disaster Resiliency Drill", lead: "Safety & Security", status: "Monthly Scheduled", badge: "Safety", completed: false },
+        { id: "PRG-4", name: "Wash in Schools (WinS) Hygiene", lead: "Science Dept", status: "Three-Star Level", badge: "Sanitation", completed: false },
+        { id: "PRG-5", name: "Gulayan sa Paaralan Project", lead: "TLE / EPP Faculty", status: "Harvest Phase", badge: "Green", completed: false },
+        { id: "PRG-6", name: "DepEd Computerization Program (DCP)", lead: "ICT Coordinator", status: "Lab Maintenance", badge: "Tech", completed: false }
+      ],
+      finance: [
+        { id: "FIN-1", type: "Outflow", date: "2026-10-15", source: "MOOE Disbursal \u2022 Voucher #2026-104", purpose: "School Sanitation & First Aid Supply Purchase", amount: 14500 },
+        { id: "FIN-2", type: "Inflow", date: "2026-09-20", source: "Restricted Asset Fund", purpose: "PTA Community Air-conditioning Donation", amount: 35000 },
+        { id: "FIN-3", type: "Inflow", date: "2026-09-10", source: "Alumni Association Endowment", purpose: "Reading Corner Book Sponsorship", amount: 18200 }
+      ],
+      documents: [],
+      attentionItems: [
+        { id: "att-1", title: "Attendance summary", desc: "October record needs an update", icon: "clipboard-check", resolved: false },
+        { id: "att-2", title: "First-aid kit inspection", desc: "Verify condition and expiry dates", icon: "shield-alert", resolved: false },
+        { id: "att-3", title: "Supply request", desc: "Quotation and approval pending", icon: "file-input", resolved: false },
+        { id: "att-4", title: "Monthly program reports", desc: "Check submission status with coordinators", icon: "folder-git-2", resolved: false }
+      ],
+      activityLogs: [
+        { id: "act-1", title: "Safety drill report logged", meta: "October 18 &bull; DRRM", type: "check" },
+        { id: "act-2", title: "Community donation recorded", meta: "September &bull; Property & resources", type: "plus" },
+        { id: "act-3", title: "Reading monitoring updated", meta: "October &bull; Academic data", type: "layout" }
+      ]
+    };
+
+    // State container
+    let state = {};
+    let currentUser = null;
+    let currentUserRole = 'Teacher';
+
+    async function loadCloudData() {
+      if (isFirebaseEnabled && db) {
+        try {
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'appState');
+          const snap = await getDoc(docRef);
+          if (snap.exists()) {
+            state = JSON.parse(snap.data().state);
+            return true;
+          }
+        } catch(e) {
+          console.error("Cloud load error", e);
+        }
+      }
+      return false;
+    }
+
+    async function initData() {
+      let loaded = await loadCloudData();
+      if (!loaded) {
+        const stored = localStorage.getItem('KES_SMS_DB_V1');
+        if (stored) {
+          try {
+            state = JSON.parse(stored);
+          } catch(e) {
+            state = defaultData;
+          }
+        } else {
+          state = defaultData;
+          saveState();
+        }
+      }
+      renderApp();
+    }
+
+    function saveState() {
+      const stateStr = JSON.stringify(state);
+      if (isFirebaseEnabled && db) {
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'appState');
+        setDoc(docRef, { state: stateStr }).catch(console.error);
+      }
+      // Always save locally as fallback
+      localStorage.setItem('KES_SMS_DB_V1', stateStr);
+    }
+
+    // AUTHENTICATION LOGIC
+    let authMode = 'login';
+    
+    function toggleAuthMode(mode) {
+      authMode = mode;
+      document.getElementById('auth-error').classList.add('hidden');
+      
+      const btnLogin = document.getElementById('tab-login');
+      const btnReg = document.getElementById('tab-register');
+      const roleSelect = document.getElementById('role-selection');
+      const submitBtn = document.getElementById('auth-submit-btn');
+      const forgotPassBtn = document.getElementById('forgot-pass-btn');
+
+      if (mode === 'login') {
+        btnLogin.className = "flex-1 py-2 text-sm font-semibold rounded-md bg-white text-emerald-800 shadow-sm transition";
+        btnReg.className = "flex-1 py-2 text-sm font-semibold rounded-md text-slate-500 hover:text-slate-700 transition";
+        roleSelect.classList.add('hidden');
+        submitBtn.innerHTML = "<span>Sign In</span>";
+        if (forgotPassBtn) forgotPassBtn.style.display = 'block';
+      } else {
+        btnReg.className = "flex-1 py-2 text-sm font-semibold rounded-md bg-white text-emerald-800 shadow-sm transition";
+        btnLogin.className = "flex-1 py-2 text-sm font-semibold rounded-md text-slate-500 hover:text-slate-700 transition";
+        roleSelect.classList.remove('hidden');
+        submitBtn.innerHTML = "<span>Create Account</span>";
+        if (forgotPassBtn) forgotPassBtn.style.display = 'none';
+      }
+    }
+
+    function showAuthError(msg, type = 'error') {
+      const errEl = document.getElementById('auth-error');
+      errEl.innerText = msg;
+      errEl.classList.remove('hidden');
+      if (type === 'success') {
+        errEl.className = "bg-emerald-50 text-emerald-700 text-xs p-3 rounded-lg border border-emerald-200 font-medium";
+      } else {
+        errEl.className = "bg-rose-50 text-rose-600 text-xs p-3 rounded-lg border border-rose-200 font-medium";
+      }
+    }
+
+    async function handleForgotPassword() {
+      const emailInput = document.getElementById('auth-email').value.trim();
+      const email = prompt("Enter your email address to reset your password:", emailInput);
+      if (!email) return;
+      if (!isFirebaseEnabled || !auth) {
+        showAuthError("Cloud services are currently offline. Cannot send reset email.", 'error');
+        return;
+      }
+      try {
+        await sendPasswordResetEmail(auth, email);
+        showAuthError("Password reset email sent! Please check your inbox.", 'success');
+      } catch (error) {
+        showAuthError(error.message.replace('Firebase: ', ''), 'error');
+      }
+    }
+
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      document.getElementById('auth-error').classList.add('hidden');
+      const email = document.getElementById('auth-email').value.trim();
+      const pass = document.getElementById('auth-pass').value;
+      const role = document.getElementById('auth-role').value;
+      const btn = document.getElementById('auth-submit-btn');
+      
+      const originalText = btn.innerHTML;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto text-white"></i>`;
+      lucide.createIcons();
+
+      if (!isFirebaseEnabled) {
+         // Mock Auth for testing if Firebase config is absent
+         setTimeout(() => {
+           currentUser = { email, uid: 'mock-user-123' };
+           currentUserRole = authMode === 'register' ? role : 'Admin (Mock)';
+           unlockApp();
+           btn.innerHTML = originalText;
+         }, 800);
+         return;
+      }
+
+      try {
+        if (authMode === 'login') {
+          const cred = await signInWithEmailAndPassword(auth, email, pass);
+          currentUser = cred.user;
+          // Fetch Role
+          const roleDoc = await getDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile'));
+          currentUserRole = roleDoc.exists() ? roleDoc.data().role : 'Teacher';
+        } else {
+          const cred = await createUserWithEmailAndPassword(auth, email, pass);
+          currentUser = cred.user;
+          currentUserRole = role;
+          // Save Role securely for the user profile
+          await setDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'profile'), {
+            email: email,
+            role: role
+          });
+          // Save Role to public directory so Admin can query and manage accounts
+          await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid), {
+            uid: currentUser.uid,
+            email: email,
+            role: role,
+            createdAt: new Date().toISOString()
+          });
+        }
+        unlockApp();
+      } catch (error) {
+        showAuthError(error.message.replace('Firebase: ', ''));
+      }
+      btn.innerHTML = originalText;
+    }
+
+    async function handleLogout() {
+      if (isFirebaseEnabled && auth) {
+        await signOut(auth);
+      }
+      currentUser = null;
+      document.getElementById('main-app').classList.add('hidden');
+      document.getElementById('main-app').classList.remove('flex');
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('auth-screen').classList.add('flex');
+      document.getElementById('auth-pass').value = '';
+    }
+
+    function unlockApp() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('flex');
+      
+      const mainApp = document.getElementById('main-app');
+      mainApp.classList.remove('hidden');
+      mainApp.classList.add('flex');
+
+      // Admin Account Management Visibility
+      if (currentUserRole.includes('Admin') || currentUserRole.includes('Administrator')) {
+        document.getElementById('nav-item-accounts').style.display = 'block';
+      } else {
+        document.getElementById('nav-item-accounts').style.display = 'none';
+      }
+
+      // Update Profile UI
+      if (currentUser) {
+        document.getElementById('user-profile-email').innerText = currentUser.email;
+        document.getElementById('user-profile-role').innerText = currentUserRole;
+        document.getElementById('user-avatar-initial').innerText = currentUser.email.charAt(0).toUpperCase();
+      }
+
+      initData(); // Syncs Cloud data upon login
+    }
+
+    // Attach ALL global functions to window (Required since script is type="module")
+    Object.assign(window, {
+      toggleAuthMode, handleAuthSubmit, handleLogout, handleForgotPassword,
+      switchTab, resetToDefaultData, showToast, openModal, closeModal,
+      openAddAttentionModal, saveAttentionItem, toggleAttentionResolved, deleteAttentionItem, logNewActivityPrompt,
+      renderLearnersTable, openAddLearnerModal, editLearner, saveLearner, deleteLearner,
+      renderPersonnelTable, openAddPersonnelModal, editPersonnel, savePersonnel, deletePersonnel,
+      renderInventoryTable, openAddAssetModal, editAsset, saveAsset, quickUpdateAssetQty, deleteAsset,
+      renderPrograms, openAddProgramModal, editProgram, saveProgram, deleteProgram,
+      renderFinanceTable, openAddFinanceModal, editFinance, saveFinance, deleteFinance,
+      fetchAndRenderAccounts, renderDocumentsTable, openAddDocumentModal, handleFileUpload, downloadDocument, deleteDocument
+    });
+
+    // Check existing auth state on load
+    if (isFirebaseEnabled && auth) {
+      onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          currentUser = user;
+          try {
+            const roleDoc = await getDoc(doc(db, 'artifacts', appId, 'users', user.uid, 'profile'));
+            currentUserRole = roleDoc.exists() ? roleDoc.data().role : 'Teacher';
+          } catch(e) { currentUserRole = 'Teacher'; }
+          unlockApp();
+        } else {
+           lucide.createIcons(); // Initialize icons for auth screen
+        }
+      });
+    } else {
+       lucide.createIcons();
+    }
+
+    function resetToDefaultData() {
+      const confirmation = confirm("Reset all records to initial photo demonstration values?");
+      if (confirmation) {
+        state = JSON.parse(JSON.stringify(defaultData));
+        saveState();
+        renderApp();
+        showToast("System database reset to initial mockup data.");
+      }
+    }
+
+    // Tab Navigation
+    function switchTab(tabKey) {
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.add('hidden'));
+      const activePanel = document.getElementById('view-' + tabKey);
+      if (activePanel) activePanel.classList.remove('hidden');
+
+      if (tabKey === 'accounts') {
+        fetchAndRenderAccounts();
+      }
+
+      // Update sidebar nav active styling
+      document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.classList.remove('bg-emerald-100/70', 'text-emerald-900', 'border', 'border-emerald-200/60');
+        btn.classList.add('text-slate-600');
+      });
+      const currentNav = document.getElementById('nav-' + tabKey);
+      if (currentNav) {
+        currentNav.classList.add('bg-emerald-100/70', 'text-emerald-900', 'border', 'border-emerald-200/60');
+        currentNav.classList.remove('text-slate-600');
+      }
+
+      // Close mobile sidebar if open
+      closeMobileSidebar();
+      lucide.createIcons();
+    }
+
+    // Mobile Sidebar Toggling
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+
+    function toggleMobileSidebar() {
+      const isOpen = !sidebar.classList.contains('-translate-x-full');
+      if (isOpen) {
+        closeMobileSidebar();
+      } else {
+        sidebar.classList.remove('-translate-x-full');
+        sidebarBackdrop.classList.remove('hidden');
+      }
+    }
+    function closeMobileSidebar() {
+      sidebar.classList.add('-translate-x-full');
+      sidebarBackdrop.classList.add('hidden');
+    }
+    sidebarToggleBtn.addEventListener('click', toggleMobileSidebar);
+    sidebarBackdrop.addEventListener('click', closeMobileSidebar);
+
+    // Toast Alert
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-message');
+      text.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Modal Handling
+    function openModal(id) {
+      document.getElementById(id).classList.remove('hidden');
+      lucide.createIcons();
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+    }
+
+    // Calculations & UI Rendering
+    function computeGradeTotals() {
+      const totals = {
+        "Grade 1": state.gradeOffsets["Grade 1"] || 126,
+        "Grade 2": state.gradeOffsets["Grade 2"] || 144,
+        "Grade 3": state.gradeOffsets["Grade 3"] || 149,
+        "Grade 4": state.gradeOffsets["Grade 4"] || 158,
+        "Grade 5": state.gradeOffsets["Grade 5"] || 163,
+        "Grade 6": state.gradeOffsets["Grade 6"] || 163,
+      };
+
+      state.learners.forEach(l => {
+        if (l.status === 'Enrolled' && totals[l.grade] !== undefined) {
+          totals[l.grade] += 1;
+        }
+      });
+
+      const grandTotal = Object.values(totals).reduce((a, b) => a + b, 0);
+      return { totals, grandTotal };
+    }
+
+    function renderApp() {
+      renderDashboard();
+      renderLearnersTable();
+      renderPersonnelTable();
+      renderInventoryTable();
+      renderPrograms();
+      renderFinanceTable();
+      renderDocumentsTable();
+      lucide.createIcons();
+    }
+
+    // Render Dashboard matching screenshot
+    function renderDashboard() {
+      const { totals, grandTotal } = computeGradeTotals();
+      
+      // Top 4 Metrics
+      document.getElementById('kpi-learners').innerText = grandTotal.toLocaleString();
+      const totalPersonnel = (state.personnel.length + (state.personnelBaseOffset || 46));
+      document.getElementById('kpi-personnel').innerText = totalPersonnel;
+      document.getElementById('kpi-programs').innerText = state.activeProgramsCount || 6;
+      
+      const totalAssets = state.inventory.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+      document.getElementById('kpi-assets').innerText = totalAssets;
+
+      // Grade progress bars
+      const gradeContainer = document.getElementById('grade-bars-container');
+      gradeContainer.innerHTML = '';
+
+      const maxGradeCount = 200; // Normalizer for progress bar calculation
+      const grades = ["Grade 1", "Grade 2", "Grade 3", "Grade 4", "Grade 5", "Grade 6"];
+
+      grades.forEach(g => {
+        const count = totals[g] || 0;
+        const pct = Math.min(Math.round((count / maxGradeCount) * 100), 100);
+        
+        const row = document.createElement('div');
+        row.className = "flex items-center text-xs group cursor-pointer hover:bg-slate-50 p-1 rounded-md transition";
+        row.onclick = () => {
+          document.getElementById('learner-grade-filter').value = g;
+          switchTab('learners');
+          renderLearnersTable();
+        };
+
+        row.innerHTML = `
+          <span class="w-16 font-medium text-slate-700">${g}</span>
+          <div class="flex-1 mx-3 bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div class="bg-[#2b8772] h-full rounded-full transition-all duration-500 ease-out" style="width: ${pct}%"></div>
+          </div>
+          <span class="w-10 text-right font-bold text-slate-800">${count}</span>
+        `;
+        gradeContainer.appendChild(row);
+      });
+
+      // Render Attention items
+      const attentionContainer = document.getElementById('attention-list');
+      attentionContainer.innerHTML = '';
+      const activeAttention = state.attentionItems.filter(i => !i.resolved);
+      document.getElementById('attention-badge').innerText = `${activeAttention.length} items`;
+
+      if (state.attentionItems.length === 0) {
+        attentionContainer.innerHTML = `<p class="text-xs text-slate-400 py-2">No attention items registered.</p>`;
+      } else {
+        state.attentionItems.forEach(item => {
+          const itemEl = document.createElement('div');
+          itemEl.className = `p-2.5 rounded-lg border transition flex items-start justify-between ${item.resolved ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-slate-50/80 hover:bg-emerald-50/50 border-slate-200/80'}`;
+          itemEl.innerHTML = `
+            <div class="flex items-start space-x-2.5">
+              <button onclick="toggleAttentionResolved('${item.id}')" class="mt-0.5 text-slate-400 hover:text-emerald-700">
+                <i data-lucide="${item.resolved ? 'check-circle-2' : 'circle'}" class="w-4 h-4 ${item.resolved ? 'text-emerald-600' : ''}"></i>
+              </button>
+              <div>
+                <p class="text-xs font-semibold ${item.resolved ? 'line-through text-slate-500' : 'text-slate-800'}">${item.title}</p>
+                <p class="text-[11px] text-slate-500">${item.desc}</p>
+              </div>
+            </div>
+            <button onclick="deleteAttentionItem('${item.id}')" class="text-slate-300 hover:text-rose-500 ml-2" title="Dismiss item">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          `;
+          attentionContainer.appendChild(itemEl);
+        });
+      }
+
+      // Render Activity logs
+      const activityContainer = document.getElementById('activity-log-list');
+      activityContainer.innerHTML = '';
+      state.activityLogs.forEach(act => {
+        const actEl = document.createElement('div');
+        actEl.className = "flex items-start space-x-3 text-xs pl-1 relative z-10";
+        actEl.innerHTML = `
+          <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 border border-emerald-200 mt-0.5">
+            <i data-lucide="${act.type === 'check' ? 'check' : (act.type === 'plus' ? 'plus' : 'book')}" class="w-3 h-3"></i>
+          </div>
+          <div>
+            <p class="font-medium text-slate-800 leading-snug">${act.title}</p>
+            <p class="text-[10px] text-slate-400 leading-snug">${act.meta}</p>
+          </div>
+        `;
+        activityContainer.appendChild(actEl);
+      });
+    }
+
+    // Toggle attention resolve
+    function toggleAttentionResolved(id) {
+      const target = state.attentionItems.find(i => i.id === id);
+      if (target) {
+        target.resolved = !target.resolved;
+        saveState();
+        renderDashboard();
+        lucide.createIcons();
+      }
+    }
+
+    function deleteAttentionItem(id) {
+      state.attentionItems = state.attentionItems.filter(i => i.id !== id);
+      saveState();
+      renderDashboard();
+      lucide.createIcons();
+      showToast("Attention item removed.");
+    }
+
+    function openAddAttentionModal() {
+      openModal('modal-attention');
+    }
+
+    function saveAttentionItem(e) {
+      e.preventDefault();
+      const title = document.getElementById('att-title').value.trim();
+      const desc = document.getElementById('att-desc').value.trim();
+      const icon = document.getElementById('att-icon').value;
+
+      state.attentionItems.unshift({
+        id: 'att-' + Date.now(),
+        title,
+        desc,
+        icon,
+        resolved: false
+      });
+
+      saveState();
+      renderDashboard();
+      closeModal('modal-attention');
+      document.getElementById('att-title').value = '';
+      document.getElementById('att-desc').value = '';
+      showToast("Reminder added to attention list!");
+      lucide.createIcons();
+    }
+
+    function logNewActivityPrompt() {
+      const eventName = prompt("Enter School Activity / Log event title:", "Quarterly PTA Assembly Conducted");
+      if (eventName) {
+        const today = "Today \u2022 Verified Log";
+        state.activityLogs.unshift({
+          id: 'act-' + Date.now(),
+          title: eventName,
+          meta: today,
+          type: 'plus'
+        });
+        saveState();
+        renderDashboard();
+        lucide.createIcons();
+        showToast("School activity logged successfully.");
+      }
+    }
+
+    // ==============================================
+    // LEARNERS CRUD LOGIC
+    // ==============================================
+    function renderLearnersTable() {
+      const tbody = document.getElementById('learners-table-body');
+      tbody.innerHTML = '';
+
+      const query = (document.getElementById('learner-search')?.value || '').toLowerCase();
+      const gradeFilter = document.getElementById('learner-grade-filter')?.value || 'ALL';
+      const statusFilter = document.getElementById('learner-status-filter')?.value || 'ALL';
+
+      const filtered = state.learners.filter(item => {
+        const matchesQuery = item.name.toLowerCase().includes(query) || 
+                             item.lrn.toLowerCase().includes(query) || 
+                             item.section.toLowerCase().includes(query);
+        const matchesGrade = gradeFilter === 'ALL' || item.grade === gradeFilter;
+        const matchesStatus = statusFilter === 'ALL' || item.status === statusFilter;
+        return matchesQuery && matchesGrade && matchesStatus;
+      });
+
+      document.getElementById('learners-count-text').innerText = `Showing ${filtered.length} of ${state.learners.length} registered learner records`;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400">No learners match the selected filters.</td></tr>`;
+        return;
+      }
+
+      filtered.forEach(learner => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-medium text-slate-800">${learner.lrn}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${learner.name}</td>
+          <td class="py-3 px-4 text-slate-600">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+              ${learner.grade} &bull; ${learner.section}
+            </span>
+          </td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              learner.status === 'Enrolled' ? 'bg-emerald-100 text-emerald-800' : 
+              (learner.status === 'Transferred' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200 text-slate-700')
+            }">
+              ${learner.status}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-slate-500">${learner.guardian || 'N/A'}</td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="editLearner('${learner.id}')" class="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100" title="Edit Record">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteLearner('${learner.id}')" class="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-slate-100" title="Delete Record">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function openAddLearnerModal() {
+      document.getElementById('modal-learner-title').innerText = "Enroll New Learner";
+      document.getElementById('learner-id-edit').value = "";
+      document.getElementById('learner-lrn').value = "1098" + Math.floor(10000000 + Math.random() * 90000000);
+      document.getElementById('learner-name').value = "";
+      document.getElementById('learner-grade').value = "Grade 1";
+      document.getElementById('learner-section').value = "Diamond";
+      document.getElementById('learner-status').value = "Enrolled";
+      document.getElementById('learner-guardian').value = "";
+      openModal('modal-learner');
+    }
+
+    function editLearner(id) {
+      const learner = state.learners.find(l => l.id === id);
+      if (!learner) return;
+
+      document.getElementById('modal-learner-title').innerText = "Edit Learner Record";
+      document.getElementById('learner-id-edit').value = learner.id;
+      document.getElementById('learner-lrn').value = learner.lrn;
+      document.getElementById('learner-name').value = learner.name;
+      document.getElementById('learner-grade').value = learner.grade;
+      document.getElementById('learner-section').value = learner.section;
+      document.getElementById('learner-status').value = learner.status;
+      document.getElementById('learner-guardian').value = learner.guardian || "";
+
+      openModal('modal-learner');
+    }
+
+    function saveLearner(e) {
+      e.preventDefault();
+      const editId = document.getElementById('learner-id-edit').value;
+      const lrn = document.getElementById('learner-lrn').value.trim();
+      const name = document.getElementById('learner-name').value.trim();
+      const grade = document.getElementById('learner-grade').value;
+      const section = document.getElementById('learner-section').value.trim();
+      const status = document.getElementById('learner-status').value;
+      const guardian = document.getElementById('learner-guardian').value.trim();
+
+      if (editId) {
+        // Update existing
+        const index = state.learners.findIndex(l => l.id === editId);
+        if (index !== -1) {
+          state.learners[index] = { id: editId, lrn, name, grade, section, status, guardian };
+          showToast("Learner profile updated!");
+        }
+      } else {
+        // Add new
+        const newLearner = {
+          id: 'L-' + Date.now(),
+          lrn,
+          name,
+          grade,
+          section,
+          status,
+          guardian
+        };
+        state.learners.unshift(newLearner);
+        showToast("New learner enrolled successfully!");
+      }
+
+      saveState();
+      closeModal('modal-learner');
+      renderApp();
+    }
+
+    function deleteLearner(id) {
+      const confirmation = confirm("Are you sure you want to delete this learner record?");
+      if (confirmation) {
+        state.learners = state.learners.filter(l => l.id !== id);
+        saveState();
+        renderApp();
+        showToast("Learner removed from database.");
+      }
+    }
+
+    // ==============================================
+    // PERSONNEL CRUD LOGIC
+    // ==============================================
+    function renderPersonnelTable() {
+      const tbody = document.getElementById('personnel-table-body');
+      tbody.innerHTML = '';
+
+      state.personnel.forEach(staff => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-medium text-slate-800">${staff.empid}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${staff.name}</td>
+          <td class="py-3 px-4 text-emerald-800 font-medium">${staff.role}</td>
+          <td class="py-3 px-4 text-slate-600">${staff.dept}</td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+              staff.status === 'Active' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+            }">
+              ${staff.status}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="editPersonnel('${staff.id}')" class="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deletePersonnel('${staff.id}')" class="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-slate-100">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function openAddPersonnelModal() {
+      document.getElementById('modal-personnel-title').innerText = "Register Personnel";
+      document.getElementById('personnel-id-edit').value = "";
+      document.getElementById('personnel-empid').value = "DEPED-4A-" + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('personnel-name').value = "";
+      document.getElementById('personnel-role').value = "Teacher I";
+      document.getElementById('personnel-dept').value = "Grade 3 Faculty";
+      document.getElementById('personnel-status').value = "Active";
+      openModal('modal-personnel');
+    }
+
+    function editPersonnel(id) {
+      const p = state.personnel.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('modal-personnel-title').innerText = "Edit Personnel";
+      document.getElementById('personnel-id-edit').value = p.id;
+      document.getElementById('personnel-empid').value = p.empid;
+      document.getElementById('personnel-name').value = p.name;
+      document.getElementById('personnel-role').value = p.role;
+      document.getElementById('personnel-dept').value = p.dept;
+      document.getElementById('personnel-status').value = p.status;
+      openModal('modal-personnel');
+    }
+
+    function savePersonnel(e) {
+      e.preventDefault();
+      const editId = document.getElementById('personnel-id-edit').value;
+      const empid = document.getElementById('personnel-empid').value.trim();
+      const name = document.getElementById('personnel-name').value.trim();
+      const role = document.getElementById('personnel-role').value.trim();
+      const dept = document.getElementById('personnel-dept').value.trim();
+      const status = document.getElementById('personnel-status').value;
+
+      if (editId) {
+        const index = state.personnel.findIndex(p => p.id === editId);
+        if (index !== -1) {
+          state.personnel[index] = { id: editId, empid, name, role, dept, status };
+          showToast("Personnel info updated.");
+        }
+      } else {
+        state.personnel.push({ id: 'P-' + Date.now(), empid, name, role, dept, status });
+        showToast("Personnel added successfully.");
+      }
+
+      saveState();
+      closeModal('modal-personnel');
+      renderApp();
+    }
+
+    function deletePersonnel(id) {
+      if (confirm("Delete this personnel record?")) {
+        state.personnel = state.personnel.filter(p => p.id !== id);
+        saveState();
+        renderApp();
+        showToast("Personnel removed.");
+      }
+    }
+
+    // ==============================================
+    // PROPERTY & INVENTORY LOGIC
+    // ==============================================
+    function renderInventoryTable() {
+      const tbody = document.getElementById('inventory-table-body');
+      tbody.innerHTML = '';
+
+      state.inventory.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono font-medium text-slate-800">${item.code}</td>
+          <td class="py-3 px-4 font-semibold text-slate-900">${item.name}</td>
+          <td class="py-3 px-4 text-slate-600">${item.location}</td>
+          <td class="py-3 px-4 font-bold text-slate-800">${item.qty} units</td>
+          <td class="py-3 px-4">
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+              item.condition.includes('Good') || item.condition.includes('Operational') ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
+            }">
+              ${item.condition}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="editAsset('${item.id}')" class="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100" title="Edit Asset Info">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="quickUpdateAssetQty('${item.id}')" class="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100" title="Update Quantity">
+              <i data-lucide="sliders" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteAsset('${item.id}')" class="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-slate-100" title="Delete Asset">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function openAddAssetModal() {
+      document.getElementById('modal-inventory-title').innerText = "Register New Asset";
+      document.getElementById('inventory-id-edit').value = "";
+      document.getElementById('inventory-code').value = 'KES-EQP-' + Math.floor(1000 + Math.random() * 9000);
+      document.getElementById('inventory-name').value = "";
+      document.getElementById('inventory-loc').value = "";
+      document.getElementById('inventory-qty').value = "1";
+      document.getElementById('inventory-cond').value = "Good Condition";
+      openModal('modal-inventory');
+    }
+
+    function editAsset(id) {
+      const item = state.inventory.find(a => a.id === id);
+      if (!item) return;
+
+      document.getElementById('modal-inventory-title').innerText = "Edit Asset Info";
+      document.getElementById('inventory-id-edit').value = item.id;
+      document.getElementById('inventory-code').value = item.code;
+      document.getElementById('inventory-name').value = item.name;
+      document.getElementById('inventory-loc').value = item.location;
+      document.getElementById('inventory-qty').value = item.qty;
+      document.getElementById('inventory-cond').value = item.condition;
+      openModal('modal-inventory');
+    }
+
+    function saveAsset(e) {
+      e.preventDefault();
+      const editId = document.getElementById('inventory-id-edit').value;
+      const code = document.getElementById('inventory-code').value.trim();
+      const name = document.getElementById('inventory-name').value.trim();
+      const loc = document.getElementById('inventory-loc').value.trim();
+      const qty = parseInt(document.getElementById('inventory-qty').value, 10) || 0;
+      const cond = document.getElementById('inventory-cond').value;
+
+      if (editId) {
+        const index = state.inventory.findIndex(a => a.id === editId);
+        if (index !== -1) {
+          state.inventory[index] = { id: editId, code, name, location: loc, qty, condition: cond };
+          showToast("Asset information updated.");
+        }
+      } else {
+        state.inventory.push({ id: 'AST-' + Date.now(), code, name, location: loc, qty, condition: cond });
+        showToast("Property asset recorded!");
+      }
+      saveState();
+      closeModal('modal-inventory');
+      renderApp();
+    }
+
+    function quickUpdateAssetQty(id) {
+      const item = state.inventory.find(a => a.id === id);
+      if (!item) return;
+      const newQty = prompt(`Update count for ${item.name}:`, item.qty);
+      if (newQty !== null) {
+        item.qty = parseInt(newQty, 10) || 0;
+        saveState();
+        renderApp();
+        showToast("Asset count updated.");
+      }
+    }
+
+    function deleteAsset(id) {
+      if (confirm("Remove this equipment from property records?")) {
+        state.inventory = state.inventory.filter(a => a.id !== id);
+        saveState();
+        renderApp();
+        showToast("Asset item deleted.");
+      }
+    }
+
+    // ==============================================
+    // PROGRAMS & PROJECTS LOGIC
+    // ==============================================
+    // Render Active Programs cards
+    function renderPrograms() {
+      const container = document.getElementById('programs-grid');
+      container.innerHTML = '';
+
+      state.programs.forEach(prog => {
+        const card = document.createElement('div');
+        card.className = "bg-white p-4 rounded-xl border border-slate-200/80 shadow-xs flex flex-col justify-between group";
+        card.innerHTML = `
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">${prog.badge}</span>
+              <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="editProgram('${prog.id}')" class="p-1 rounded text-slate-400 hover:text-emerald-700 hover:bg-slate-100" title="Edit Program">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="deleteProgram('${prog.id}')" class="p-1 rounded text-slate-400 hover:text-rose-600 hover:bg-slate-100" title="Delete Program">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </div>
+            <h4 class="text-xs font-bold text-slate-800 leading-snug">${prog.name}</h4>
+            <p class="text-[11px] text-slate-500 mt-1">Lead: ${prog.lead}</p>
+          </div>
+          <div class="mt-4 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <span class="text-slate-600 font-medium">${prog.status}</span>
+            <span class="${prog.completed ? 'text-slate-400' : 'text-emerald-700'} font-bold">
+              ${prog.completed ? '&check; Completed' : '&check; In Progress'}
+            </span>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+      
+      // Update Dashboard active program count metric
+      const activeCount = state.programs.filter(p => !p.completed).length;
+      state.activeProgramsCount = activeCount;
+      const metricElement = document.getElementById('kpi-programs');
+      if (metricElement) {
+         metricElement.innerText = activeCount;
+      }
+    }
+
+    function openAddProgramModal() {
+      document.getElementById('modal-program-title').innerText = "Add New Program";
+      document.getElementById('program-id-edit').value = "";
+      document.getElementById('program-name').value = "";
+      document.getElementById('program-lead').value = "";
+      document.getElementById('program-status').value = "Planning Phase";
+      document.getElementById('program-badge').value = "Priority";
+      document.getElementById('program-completed').value = "false";
+      openModal('modal-program');
+    }
+
+    function editProgram(id) {
+      const prog = state.programs.find(p => p.id === id);
+      if (!prog) return;
+
+      document.getElementById('modal-program-title').innerText = "Edit Program";
+      document.getElementById('program-id-edit').value = prog.id;
+      document.getElementById('program-name').value = prog.name;
+      document.getElementById('program-lead').value = prog.lead;
+      document.getElementById('program-status').value = prog.status;
+      document.getElementById('program-badge').value = prog.badge;
+      document.getElementById('program-completed').value = prog.completed ? "true" : "false";
+      openModal('modal-program');
+    }
+
+    function saveProgram(e) {
+      e.preventDefault();
+      const editId = document.getElementById('program-id-edit').value;
+      const name = document.getElementById('program-name').value.trim();
+      const lead = document.getElementById('program-lead').value.trim();
+      const status = document.getElementById('program-status').value.trim();
+      const badge = document.getElementById('program-badge').value.trim();
+      const completed = document.getElementById('program-completed').value === "true";
+
+      if (editId) {
+        const index = state.programs.findIndex(p => p.id === editId);
+        if (index !== -1) {
+          state.programs[index] = { id: editId, name, lead, status, badge, completed };
+          showToast("Program updated.");
+        }
+      } else {
+        state.programs.unshift({ id: 'PRG-' + Date.now(), name, lead, status, badge, completed });
+        showToast("New program added successfully.");
+      }
+      saveState();
+      closeModal('modal-program');
+      renderApp();
+    }
+
+    function deleteProgram(id) {
+      if (confirm("Remove this program from the records?")) {
+        state.programs = state.programs.filter(p => p.id !== id);
+        saveState();
+        renderApp();
+        showToast("Program removed.");
+      }
+    }
+
+    // ==============================================
+    // FINANCE & DONATIONS LOGIC
+    // ==============================================
+    function renderFinanceTable() {
+      const tbody = document.getElementById('finance-table-body');
+      tbody.innerHTML = '';
+      
+      let balance = 0;
+      const records = state.finance || [];
+      
+      // Sort by date descending
+      const sortedFinance = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      sortedFinance.forEach(record => {
+        const isOutflow = record.type === 'Outflow';
+        const amountVal = parseFloat(record.amount) || 0;
+        if (isOutflow) {
+            balance -= amountVal;
+        } else {
+            balance += amountVal;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-mono text-slate-600">${new Date(record.date).toLocaleDateString()}</td>
+          <td class="py-3 px-4 font-semibold text-slate-800">${record.source}</td>
+          <td class="py-3 px-4 text-slate-600">${record.purpose}</td>
+          <td class="py-3 px-4 text-right font-bold ${isOutflow ? 'text-rose-600' : 'text-emerald-600'}">
+            ${isOutflow ? '-' : '+'} ₱${amountVal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+          </td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="editFinance('${record.id}')" class="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100" title="Edit Record">
+              <i data-lucide="edit-3" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteFinance('${record.id}')" class="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-slate-100" title="Delete Record">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      
+      const balDisplay = document.getElementById('finance-balance-display');
+      if (balDisplay) {
+          balDisplay.innerText = `Total Net Balance: ₱${balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+          balDisplay.className = `text-xs font-bold ${balance >= 0 ? 'text-emerald-800' : 'text-rose-800'}`;
+      }
+
+      lucide.createIcons();
+    }
+
+    function openAddFinanceModal() {
+      document.getElementById('modal-finance-title').innerText = "Add Financial Record";
+      document.getElementById('finance-id-edit').value = "";
+      document.getElementById('finance-type').value = "Inflow";
+      document.getElementById('finance-date').value = new Date().toISOString().split('T')[0];
+      document.getElementById('finance-source').value = "";
+      document.getElementById('finance-purpose').value = "";
+      document.getElementById('finance-amount').value = "";
+      openModal('modal-finance');
+    }
+
+    function editFinance(id) {
+      const records = state.finance || [];
+      const record = records.find(r => r.id === id);
+      if (!record) return;
+
+      document.getElementById('modal-finance-title').innerText = "Edit Financial Record";
+      document.getElementById('finance-id-edit').value = record.id;
+      document.getElementById('finance-type').value = record.type;
+      document.getElementById('finance-date').value = record.date;
+      document.getElementById('finance-source').value = record.source;
+      document.getElementById('finance-purpose').value = record.purpose;
+      document.getElementById('finance-amount').value = record.amount;
+      openModal('modal-finance');
+    }
+
+    function saveFinance(e) {
+      e.preventDefault();
+      const editId = document.getElementById('finance-id-edit').value;
+      const type = document.getElementById('finance-type').value;
+      const date = document.getElementById('finance-date').value;
+      const source = document.getElementById('finance-source').value.trim();
+      const purpose = document.getElementById('finance-purpose').value.trim();
+      const amount = parseFloat(document.getElementById('finance-amount').value);
+
+      if (!state.finance) state.finance = [];
+
+      if (editId) {
+        const index = state.finance.findIndex(r => r.id === editId);
+        if (index !== -1) {
+          state.finance[index] = { id: editId, type, date, source, purpose, amount };
+          showToast("Financial record updated.");
+        }
+      } else {
+        state.finance.unshift({ id: 'FIN-' + Date.now(), type, date, source, purpose, amount });
+        showToast("New financial record added.");
+      }
+
+      saveState();
+      closeModal('modal-finance');
+      renderApp();
+    }
+
+    function deleteFinance(id) {
+      if (confirm("Are you sure you want to delete this financial record?")) {
+        state.finance = state.finance.filter(r => r.id !== id);
+        saveState();
+        renderApp();
+        showToast("Financial record deleted.");
+      }
+    }
+
+    async function fetchAndRenderAccounts() {
+      const tbody = document.getElementById('accounts-table-body');
+      tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500"><i data-lucide="loader-2" class="w-4 h-4 animate-spin mx-auto"></i></td></tr>';
+      lucide.createIcons();
+      
+      if (!isFirebaseEnabled || !db) {
+          tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500">Cloud database not enabled.</td></tr>';
+          return;
+      }
+
+      try {
+          const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
+          const snapshot = await getDocs(usersRef);
+          
+          tbody.innerHTML = '';
+          if (snapshot.empty) {
+              tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-slate-500">No registered accounts found.</td></tr>';
+              return;
+          }
+
+          snapshot.forEach(doc => {
+              const data = doc.data();
+              const tr = document.createElement('tr');
+              tr.className = "hover:bg-slate-50 transition";
+              tr.innerHTML = `
+                  <td class="py-3 px-4 font-mono text-slate-500 text-[10px]">${data.uid || doc.id}</td>
+                  <td class="py-3 px-4 font-medium text-slate-800">${data.email}</td>
+                  <td class="py-3 px-4">
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${data.role === 'Admin' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
+                          ${data.role || 'Unknown'}
+                      </span>
+                  </td>
+              `;
+              tbody.appendChild(tr);
+          });
+      } catch (error) {
+          console.error("Error fetching accounts:", error);
+          tbody.innerHTML = `<tr><td colspan="3" class="py-4 text-center text-rose-500">Error loading accounts: ${error.message}</td></tr>`;
+      }
+    }
+
+    // ==============================================
+    // DOCUMENTS REPOSITORY LOGIC
+    // ==============================================
+    function renderDocumentsTable() {
+      const tbody = document.getElementById('documents-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      
+      const query = (document.getElementById('document-search')?.value || '').toLowerCase();
+      const records = state.documents || [];
+      
+      const filtered = records.filter(item => item.name.toLowerCase().includes(query));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">No documents found in repository.</td></tr>`;
+        return;
+      }
+
+      filtered.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(doc => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition";
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-medium text-slate-800 flex items-center space-x-2">
+            <i data-lucide="file" class="w-4 h-4 text-emerald-600 shrink-0"></i>
+            <span class="truncate max-w-[200px] block" title="${doc.name}">${doc.name}</span>
+          </td>
+          <td class="py-3 px-4 text-slate-600 uppercase text-[10px] font-bold">${doc.type}</td>
+          <td class="py-3 px-4 text-slate-600">${doc.size}</td>
+          <td class="py-3 px-4 text-slate-600">${new Date(doc.date).toLocaleDateString()}</td>
+          <td class="py-3 px-4 text-right space-x-1">
+            <button onclick="downloadDocument('${doc.id}')" class="p-1 rounded text-slate-500 hover:text-emerald-700 hover:bg-slate-100" title="Download Document">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </button>
+            <button onclick="deleteDocument('${doc.id}')" class="p-1 rounded text-slate-500 hover:text-rose-600 hover:bg-slate-100" title="Delete Document">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function openAddDocumentModal() {
+      document.getElementById('document-file').value = '';
+      openModal('modal-document');
+    }
+
+    function handleFileUpload(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('document-file');
+      if (!fileInput.files || fileInput.files.length === 0) return;
+      
+      const file = fileInput.files[0];
+      const maxSize = 800 * 1024; // 800 KB
+      
+      if (file.size > maxSize) {
+        showToast("Error: File exceeds 800KB maximum size limit.");
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const base64String = event.target.result;
+        if (!state.documents) state.documents = [];
+        
+        // Extract extension for visual type tagging
+        const extMatch = file.name.match(/\.([^.]+)$/);
+        const ext = extMatch ? extMatch[1] : 'FILE';
+
+        state.documents.unshift({
+          id: 'DOC-' + Date.now(),
+          name: file.name,
+          type: ext,
+          size: Math.round(file.size / 1024),
+          date: new Date().toISOString(),
+          dataUrl: base64String
+        });
+
+        saveState();
+        closeModal('modal-document');
+        renderApp();
+        showToast("Document saved to repository.");
+      };
+      
+      reader.readAsDataURL(file);
+    }
+
+    function downloadDocument(id) {
+      if (!state.documents) return;
+      const doc = state.documents.find(d => d.id === id);
+      if (doc && doc.dataUrl) {
+        const a = document.createElement('a');
+        a.href = doc.dataUrl;
+        a.download = doc.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast("Download started.");
+      }
+    }
+
+    function deleteDocument(id) {
+      if (confirm("Permanently delete this document from the repository?")) {
+        state.documents = state.documents.filter(d => d.id !== id);
+        saveState();
+        renderApp();
+        showToast("Document deleted.");
+      }
+    }
+
+    // Initialize on window load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Main init handled post-login, just render icons safely here
+      if (!isFirebaseEnabled) {
+        lucide.createIcons();
+      }
+    });
+  </script>
+  </div> <!-- End main-app wrapper -->
+</body>
+</html>
